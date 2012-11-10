@@ -26,6 +26,7 @@
 #include <hildon/hildon.h>
 #include <libintl.h>
 #include <profiled/libprofile.h>
+#include <profiled/keys_nokia.h>
 #include <libhildondesktop/libhildondesktop.h>
 
 typedef struct _ProfilesStatusMenuItem        ProfilesStatusMenuItem;
@@ -46,10 +47,8 @@ struct _ProfilesStatusMenuItemClass
 struct _ProfilesStatusMenuItemPrivate
 {
     GtkWidget *button;
-    GtkWidget *dialog;
     gchar *current_profile_name;
     DBusConnection *conn;
-    gpointer data;
 };
 
 GType profiles_status_menu_item_get_type (void);
@@ -79,7 +78,7 @@ profiles_status_menu_item_update_icons (ProfilesStatusMenuItem *plugin, gboolean
 }
 
 static void
-profiles_status_menu_item_get_current_profile (ProfilesStatusMenuItem *plugin)
+profiles_status_menu_item_update_profile (ProfilesStatusMenuItem *plugin)
 {
     ProfilesStatusMenuItemPrivate *priv = plugin->priv;
     gboolean is_silent;
@@ -98,7 +97,6 @@ profiles_status_menu_item_get_current_profile (ProfilesStatusMenuItem *plugin)
     else
     {
         hildon_button_set_value (HILDON_BUTTON (plugin->priv->button), priv->current_profile_name);
-        /* TODO: See if all values in the current profile are silent */
         is_silent = FALSE;
     }
 
@@ -106,19 +104,60 @@ profiles_status_menu_item_get_current_profile (ProfilesStatusMenuItem *plugin)
 }
 
 static void
-profiles_status_menu_item_on_button_clicked (GtkWidget *button G_GNUC_UNUSED, ProfilesStatusMenuItem *plugin)
+profiles_status_menu_item_on_profile_changed (const char *profile G_GNUC_UNUSED, void *user_data)
+{
+    ProfilesStatusMenuItem *plugin = user_data;
+    profiles_status_menu_item_update_profile (plugin);
+}
+
+static void
+profiles_status_menu_item_box_update_vibration (GtkWidget *button, gpointer user_data G_GNUC_UNUSED)
+{
+    const char *profile;
+    gboolean enable;
+
+    profile = g_object_get_data (G_OBJECT (button), "profile");
+    if (!profile)
+         return;
+
+    enable = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (button));
+    profile_set_value_as_bool (profile, PROFILEKEY_VIBRATING_ALERT_ENABLED, enable);
+}
+
+static void
+profiles_status_menu_item_box_update_profile (GtkWidget *button, gpointer user_data G_GNUC_UNUSED)
+{
+    const char *profile = g_object_get_data (G_OBJECT (button), "profile");
+    if (!profile)
+         return;
+
+    if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (button)))
+        profile_set_profile (profile);
+}
+
+static void
+profiles_status_menu_item_on_button_clicked (GtkWidget *widget G_GNUC_UNUSED, ProfilesStatusMenuItem *plugin)
 {
     ProfilesStatusMenuItemPrivate *priv = plugin->priv;
-    GtkWidget *general_button;
-    GtkWidget *silent_button;
-    GtkWidget *general_vibrate_button;
-    GtkWidget *silent_vibrate_button;
+    GtkWidget *dialog = NULL;
+    GtkWidget *button;
+    GtkWidget *vibrate_button;
     GtkWidget *profiles_vbox;
     GtkWidget *vibration_vbox;
     GtkWidget *main_hbox;
-    GSList *profile_buttons_list;
+    GtkWidget *radio_group = NULL;
+    char **profiles = NULL;
+    char **ptr;
+    const char *label;
+    const char *icon;
+    const char *vibrate;
+    gboolean vibrating;
 
-    priv->dialog = gtk_dialog_new_with_buttons (dgettext ("osso-profiles", "profi_ti_select_profiles"),
+    profiles = profile_get_profiles ();
+    if (!profiles)
+        goto clean;
+
+    dialog = gtk_dialog_new_with_buttons (dgettext ("osso-profiles", "profi_ti_select_profiles"),
                                                 GTK_WINDOW (plugin),
                                                 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
                                                 dgettext ("hildon-libs", "wdgt_bd_done"),
@@ -127,63 +166,102 @@ profiles_status_menu_item_on_button_clicked (GtkWidget *button G_GNUC_UNUSED, Pr
                                                 GTK_RESPONSE_REJECT,
                                                 NULL);
 
-    /* TODO: create profile_buttons_list */
-
-    general_button = hildon_gtk_radio_button_new (HILDON_SIZE_FINGER_HEIGHT, profile_buttons_list);
-    gtk_button_set_label (GTK_BUTTON (general_button), dgettext ("osso-profiles", "profi_va_plugin_general"));
-    gtk_button_set_image (GTK_BUTTON (general_button), gtk_image_new_from_icon_name ("general_profile", GTK_ICON_SIZE_DIALOG));
-    gtk_toggle_button_set_mode (GTK_TOGGLE_BUTTON (general_button), FALSE);
-    gtk_button_set_alignment (GTK_BUTTON (general_button), 0, 0.5);
-
-    silent_button = hildon_gtk_radio_button_new (HILDON_SIZE_FINGER_HEIGHT, profile_buttons_list);
-    gtk_button_set_label (GTK_BUTTON (silent_button), dgettext ("osso-profiles", "profi_va_plugin_silent"));
-    gtk_button_set_image (GTK_BUTTON (silent_button), gtk_image_new_from_icon_name ("statusarea_silent", GTK_ICON_SIZE_DIALOG));
-    gtk_toggle_button_set_mode (GTK_TOGGLE_BUTTON (silent_button), FALSE);
-    gtk_button_set_alignment (GTK_BUTTON (silent_button), 0, 0.5);
-
-    general_vibrate_button = hildon_check_button_new (HILDON_SIZE_FINGER_HEIGHT);
-    gtk_button_set_label (GTK_BUTTON (general_vibrate_button), dgettext ("osso-profiles", "profi_fi_select_general_vibrate"));
-    silent_vibrate_button = hildon_check_button_new (HILDON_SIZE_FINGER_HEIGHT);
-    gtk_button_set_label (GTK_BUTTON (silent_vibrate_button), dgettext ("osso-profiles", "profi_fi_select_silent_vibrate"));
-
-    profiles_vbox = gtk_vbox_new (FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (profiles_vbox), general_button, FALSE, FALSE, HILDON_MARGIN_HALF);
-    gtk_box_pack_start (GTK_BOX (profiles_vbox), silent_button, FALSE, FALSE, HILDON_MARGIN_HALF);
-
-    vibration_vbox = gtk_vbox_new (FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (vibration_vbox), general_vibrate_button, FALSE, FALSE, HILDON_MARGIN_HALF);
-    gtk_box_pack_start (GTK_BOX (vibration_vbox), silent_vibrate_button, FALSE, FALSE, HILDON_MARGIN_HALF);
+    if (!dialog)
+        goto clean;
 
     main_hbox = gtk_hbox_new (FALSE, 0);
+    if (main_hbox)
+        goto clean;
+
+    gtk_box_pack_start (GTK_BOX (GTK_DIALOG (dialog)->vbox), main_hbox, TRUE, TRUE, 0);
+
+    profiles_vbox = gtk_vbox_new (FALSE, 0);
+    if (!profiles_vbox)
+        goto clean;
+
     gtk_box_pack_start (GTK_BOX (main_hbox), profiles_vbox, TRUE, TRUE, HILDON_MARGIN_HALF);
+
+    vibration_vbox = gtk_vbox_new (FALSE, 0);
+    if (!vibration_vbox)
+        goto clean;
+
     gtk_box_pack_start (GTK_BOX (main_hbox), vibration_vbox, FALSE, FALSE, HILDON_MARGIN_HALF);
 
-    gtk_box_pack_start (GTK_BOX (GTK_DIALOG (priv->dialog)->vbox), main_hbox, TRUE, TRUE, 0);
+    for (ptr = profiles; *ptr; ++ptr)
+    {
 
-    if (strcmp (priv->current_profile_name, "general") == 0)
-        gtk_toggle_button_set_mode (GTK_TOGGLE_BUTTON (general_button), TRUE);
-    else if (strcmp (priv->current_profile_name, "silent") == 0)
-        gtk_toggle_button_set_mode (GTK_TOGGLE_BUTTON (silent_button), TRUE);
+        if (strcmp (*ptr, "general") == 0)
+        {
+            label = dgettext ("osso-profiles", "profi_va_plugin_general");
+            vibrate = dgettext ("osso-profiles", "profi_fi_select_general_vibrate");
+            icon = "general_profile";
+        }
+        else if (strcmp (*ptr, "silent") == 0)
+        {
+            label = dgettext ("osso-profiles", "profi_va_plugin_silent");
+            vibrate = dgettext ("osso-profiles", "profi_fi_select_silent_vibrate");
+            icon = "statusarea_silent";
+        }
+        else
+        {
+            label = *ptr;
+            vibrate = dgettext ("osso-profiles", "profi_fi_select_vibrate");
+            icon = "general_profile";
+        }
 
-    /* This is causing a segfault for some reason */
-    /* int is_general_vibration_active = profile_get_value_as_bool ("general", "vibrating.alert.enabled");
-    gtk_toggle_button_set_mode (GTK_TOGGLE_BUTTON (general_vibrate_button), is_general_vibration_active);
+        button = hildon_gtk_radio_button_new_from_widget (HILDON_SIZE_FINGER_HEIGHT, GTK_RADIO_BUTTON(radio_group));
 
-    int is_silent_vibrtaion_active = profile_get_value_as_bool ("silent", "vibrating.alert.enabled");
-    gtk_toggle_button_set_mode (GTK_TOGGLE_BUTTON (silent_vibrate_button), is_silent_vibrtaion_active);*/
+        if (!button)
+            goto clean;
 
-    gtk_widget_show_all (priv->dialog);
+        if (!radio_group)
+            radio_group = button;
 
-    gint result = gtk_dialog_run (GTK_DIALOG (priv->dialog));
+        g_object_set_data (G_OBJECT (button), "profile", *ptr);
+        gtk_button_set_label (GTK_BUTTON (button), label);
+        gtk_button_set_image (GTK_BUTTON (button), gtk_image_new_from_icon_name (icon, GTK_ICON_SIZE_DIALOG));
+        gtk_button_set_alignment (GTK_BUTTON (button), 0, 0.5);
+
+        if (strcmp (priv->current_profile_name, *ptr) == 0)
+            gtk_toggle_button_set_mode (GTK_TOGGLE_BUTTON (button), TRUE);
+        else
+            gtk_toggle_button_set_mode (GTK_TOGGLE_BUTTON (button), FALSE);
+
+        gtk_box_pack_start (GTK_BOX (profiles_vbox), button, FALSE, FALSE, HILDON_MARGIN_HALF);
+
+        vibrate_button = hildon_check_button_new (HILDON_SIZE_FINGER_HEIGHT);
+
+        if (!button)
+            goto clean;
+
+        g_object_set_data (G_OBJECT (vibrate_button), "profile", *ptr);
+        gtk_button_set_label (GTK_BUTTON (vibrate_button), vibrate);
+
+        vibrating = profile_get_value_as_bool (*ptr, PROFILEKEY_VIBRATING_ALERT_ENABLED);
+        gtk_toggle_button_set_mode (GTK_TOGGLE_BUTTON (vibrate_button), vibrating);
+
+        gtk_box_pack_start (GTK_BOX (vibration_vbox), vibrate_button, FALSE, FALSE, HILDON_MARGIN_HALF);
+
+    }
+
+    gtk_widget_show_all (dialog);
+
+    gint result = gtk_dialog_run (GTK_DIALOG (dialog));
     switch (result)
     {
-      case GTK_RESPONSE_ACCEPT:
-         break;
-      default:
-         break;
+        case GTK_RESPONSE_ACCEPT:
+            gtk_container_foreach (GTK_CONTAINER (vibration_vbox), profiles_status_menu_item_box_update_vibration, NULL);
+            gtk_container_foreach (GTK_CONTAINER (profiles_vbox), profiles_status_menu_item_box_update_profile, NULL);
+            break;
+        default:
+            break;
     }
-    gtk_widget_destroy (priv->dialog);
-    g_slist_free (profile_buttons_list);
+
+clean:
+    if (dialog)
+        gtk_widget_destroy (dialog);
+    if (profiles)
+        profile_free_profiles (profiles);
 }
 
 static void
@@ -197,33 +275,70 @@ profiles_status_menu_item_init (ProfilesStatusMenuItem *plugin)
     dbus_error_init (&error);
 
     priv->conn = dbus_bus_get (DBUS_BUS_SESSION, &error);
-    if (dbus_error_is_set (&error))
+
+    dbus_error_free (&error);
+
+    if (!priv->conn)
     {
-        g_warning ("Could not open D-Bus session bus connection.");
-        dbus_error_free (&error);
+        g_warning ("Could not open D-Bus session bus connection");
+        return;
     }
+
     profile_connection_set (priv->conn);
 
+    if ( profile_tracker_init () != 0 )
+    {
+        g_warning ("Cound not start listening to profile daemon");
+        return;
+    }
+
+    profile_track_add_profile_cb (profiles_status_menu_item_on_profile_changed, plugin, NULL);
+
     priv->button = hildon_button_new (HILDON_SIZE_FINGER_HEIGHT | HILDON_SIZE_AUTO_WIDTH, HILDON_BUTTON_ARRANGEMENT_VERTICAL);
+
+    if (!priv->button)
+    {
+        g_warning ("Could not create Hildon Button");
+        return;
+    }
+
     hildon_button_set_style (HILDON_BUTTON (priv->button), HILDON_BUTTON_STYLE_PICKER);
     hildon_button_set_title (HILDON_BUTTON (priv->button), dgettext ("osso-profiles", "profi_ti_menu_plugin"));
     gtk_button_set_alignment (GTK_BUTTON (priv->button), 0, 0);
     g_signal_connect_after (priv->button, "clicked", G_CALLBACK (profiles_status_menu_item_on_button_clicked), plugin);
 
-    profiles_status_menu_item_get_current_profile (plugin);
+    profiles_status_menu_item_update_profile (plugin);
 
     gtk_container_add (GTK_CONTAINER (plugin), priv->button);
-
-    gtk_widget_show_all (priv->button);
-
-    gtk_widget_show (GTK_WIDGET (plugin));
+    gtk_widget_show_all (GTK_WIDGET (plugin));
 }
 
 static void
-profiles_status_menu_item_class_finalize (ProfilesStatusMenuItemClass *klass G_GNUC_UNUSED) {}
+profiles_status_menu_item_finalize (GObject *object)
+{
+    ProfilesStatusMenuItem *plugin = G_TYPE_CHECK_INSTANCE_CAST (object, profiles_status_menu_item_get_type (), ProfilesStatusMenuItem);
+
+    profile_track_remove_profile_cb (profiles_status_menu_item_on_profile_changed, plugin);
+    profile_tracker_quit ();
+
+    if (plugin->priv->conn)
+    {
+        dbus_connection_unref (plugin->priv->conn);
+        plugin->priv->conn = NULL;
+    }
+
+    G_OBJECT_CLASS (profiles_status_menu_item_parent_class)->finalize (object);
+}
+
+static void
+profiles_status_menu_item_class_finalize (ProfilesStatusMenuItemClass *klass G_GNUC_UNUSED)
+{
+}
 
 static void
 profiles_status_menu_item_class_init (ProfilesStatusMenuItemClass *klass)
 {
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+    object_class->finalize = (GObjectFinalizeFunc) profiles_status_menu_item_finalize;
     g_type_class_add_private (klass, sizeof (ProfilesStatusMenuItemPrivate));
 }
