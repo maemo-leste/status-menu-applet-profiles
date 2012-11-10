@@ -1,3 +1,24 @@
+ /***********************************************************************************
+ *  status-menu-applet-profiles: Open source rewrite of the Maemo 5 profiles applet
+ *  Copyright (C) 2011 Mohammad Abu-Garbeyyeh
+ *  Copyright (C) 2012 Pali Rohár
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ ***********************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,11 +26,22 @@
 #include <hildon/hildon.h>
 #include <libintl.h>
 #include <profiled/libprofile.h>
+#include <libhildondesktop/libhildondesktop.h>
 
-#include "status-menu-applet-profiles.h"
+typedef struct _ProfilesStatusMenuItem        ProfilesStatusMenuItem;
+typedef struct _ProfilesStatusMenuItemClass   ProfilesStatusMenuItemClass;
+typedef struct _ProfilesStatusMenuItemPrivate ProfilesStatusMenuItemPrivate;
 
-#define PROFILES_STATUS_PLUGIN_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE (obj, \
-                            TYPE_PROFILES_STATUS_PLUGIN, ProfilesStatusMenuItemPrivate))
+struct _ProfilesStatusMenuItem
+{
+    HDStatusMenuItem parent;
+    ProfilesStatusMenuItemPrivate *priv;
+};
+
+struct _ProfilesStatusMenuItemClass
+{
+    HDStatusMenuItemClass parent;
+};
 
 struct _ProfilesStatusMenuItemPrivate
 {
@@ -20,21 +52,14 @@ struct _ProfilesStatusMenuItemPrivate
     gpointer data;
 };
 
+GType profiles_status_menu_item_get_type (void);
+
 HD_DEFINE_PLUGIN_MODULE (ProfilesStatusMenuItem, profiles_status_menu_item, HD_TYPE_STATUS_MENU_ITEM);
-
-static void
-profiles_status_menu_item_class_finalize (ProfilesStatusMenuItemClass *klass) {}
-
-static void
-profiles_status_menu_item_class_init (ProfilesStatusMenuItemClass *klass)
-{
-    g_type_class_add_private (klass, sizeof (ProfilesStatusMenuItemPrivate));
-}
 
 static void
 profiles_status_menu_item_update_icons (ProfilesStatusMenuItem *plugin, gboolean is_silent)
 {
-    ProfilesStatusMenuItemPrivate *priv = PROFILES_STATUS_PLUGIN_GET_PRIVATE (plugin);
+    ProfilesStatusMenuItemPrivate *priv = plugin->priv;
     if (is_silent)
     {
         hildon_button_set_image (HILDON_BUTTON (priv->button),
@@ -56,7 +81,7 @@ profiles_status_menu_item_update_icons (ProfilesStatusMenuItem *plugin, gboolean
 static void
 profiles_status_menu_item_get_current_profile (ProfilesStatusMenuItem *plugin)
 {
-    ProfilesStatusMenuItemPrivate *priv = PROFILES_STATUS_PLUGIN_GET_PRIVATE (plugin);
+    ProfilesStatusMenuItemPrivate *priv = plugin->priv;
     gboolean is_silent;
 
     priv->current_profile_name = profile_get_profile ();
@@ -81,9 +106,9 @@ profiles_status_menu_item_get_current_profile (ProfilesStatusMenuItem *plugin)
 }
 
 static void
-profiles_status_menu_item_on_button_clicked (GtkWidget *button, ProfilesStatusMenuItem *plugin)
+profiles_status_menu_item_on_button_clicked (GtkWidget *button G_GNUC_UNUSED, ProfilesStatusMenuItem *plugin)
 {
-    ProfilesStatusMenuItemPrivate *priv = PROFILES_STATUS_PLUGIN_GET_PRIVATE (plugin);
+    ProfilesStatusMenuItemPrivate *priv = plugin->priv;
     GtkWidget *general_button;
     GtkWidget *silent_button;
     GtkWidget *general_vibrate_button;
@@ -101,6 +126,8 @@ profiles_status_menu_item_on_button_clicked (GtkWidget *button, ProfilesStatusMe
                                                 GTK_STOCK_CANCEL,
                                                 GTK_RESPONSE_REJECT,
                                                 NULL);
+
+    /* TODO: create profile_buttons_list */
 
     general_button = hildon_gtk_radio_button_new (HILDON_SIZE_FINGER_HEIGHT, profile_buttons_list);
     gtk_button_set_label (GTK_BUTTON (general_button), dgettext ("osso-profiles", "profi_va_plugin_general"));
@@ -162,7 +189,8 @@ profiles_status_menu_item_on_button_clicked (GtkWidget *button, ProfilesStatusMe
 static void
 profiles_status_menu_item_init (ProfilesStatusMenuItem *plugin)
 {
-    plugin->priv = PROFILES_STATUS_PLUGIN_GET_PRIVATE (plugin);
+    plugin->priv = G_TYPE_INSTANCE_GET_PRIVATE (plugin, profiles_status_menu_item_get_type (), ProfilesStatusMenuItemPrivate);
+
     ProfilesStatusMenuItemPrivate *priv = plugin->priv;
     DBusError error;
 
@@ -191,3 +219,11 @@ profiles_status_menu_item_init (ProfilesStatusMenuItem *plugin)
     gtk_widget_show (GTK_WIDGET (plugin));
 }
 
+static void
+profiles_status_menu_item_class_finalize (ProfilesStatusMenuItemClass *klass G_GNUC_UNUSED) {}
+
+static void
+profiles_status_menu_item_class_init (ProfilesStatusMenuItemClass *klass)
+{
+    g_type_class_add_private (klass, sizeof (ProfilesStatusMenuItemPrivate));
+}

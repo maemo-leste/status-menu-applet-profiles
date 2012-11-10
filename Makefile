@@ -1,19 +1,15 @@
-OBJS=status-menu-applet-profiles.o
-SOURCES=status-menu-applet-profiles.c
-LIB=profiles_status_menu_item.so
-PKG_FLAGS=$(shell pkg-config hildon-1 profile libhildondesktop-1 --libs --cflags)
-CCFLAGS=-shared -Wall -g
-CC=gcc
+all: profiles_status_menu_item.so
 
-all:$(LIB)
-
-$(LIB):$(OBJS)
-	$(CC) $(CCFLAGS) $(PKG_FLAGS) $(OBJS) -o $(LIB)
-
-.c.o:
-	$(CC) $(CCFLAGS) $(PKG_FLAGS) -c $< -o $@
-
-.PHONE: clean all
+install:
+	install -d "$(DESTDIR)/usr/lib/hildon-desktop/"
+	install -d "$(DESTDIR)/usr/share/applications/hildon-status-menu/"
+	install -m 644 profiles_status_menu_item.so "$(DESTDIR)/usr/lib/hildon-desktop/"
+	install -m 644 status-area-applet-profiles.desktop "$(DESTDIR)/usr/share/applications/hildon-status-menu/"
 
 clean:
-	rm -f $(OBJS) $(LIB)
+	$(RM) profiles_status_menu_item.so
+
+profiles_status_menu_item.so: profiles_status_menu_item.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(shell pkg-config --cflags --libs hildon-1 profile libhildondesktop-1) -W -Wall -O2 -shared $^ -o $@
+
+.PHONY: all install clean
