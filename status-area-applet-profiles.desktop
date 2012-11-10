@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Profiles
+Comment=Profiles Status Menu item
+Type=default
+X-Path=profiles_status_menu_item.so
