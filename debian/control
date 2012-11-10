@@ -1,0 +1,12 @@
+Source: status-menu-applet-profiles
+Section: libs
+Priority: optional
+Maintainer: Pali Rohár <pali.rohar@gmail.com>
+Build-Depends: debhelper (>= 5), pkg-config, libhildon1-dev, libhildondesktop1-dev, libprofile-dev
+Standards-Version: 3.9.3
+
+Package: status-menu-applet-profiles
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, profiled (>= 0.0.3), profile-data (>= 0.0.2), libhildondesktop1, osso-profiles-l10n-mr | osso-profiles-l10n-mr0
+Description: Profiles status menu plugin
+ This package contains the status menu plugin for switching profiles
