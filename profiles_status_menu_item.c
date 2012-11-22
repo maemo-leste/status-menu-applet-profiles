@@ -114,13 +114,13 @@ static void
 profiles_status_menu_item_box_update_vibration (GtkWidget *button, gpointer user_data G_GNUC_UNUSED)
 {
     const char *profile;
-    gboolean enable;
+    int enable;
 
     profile = g_object_get_data (G_OBJECT (button), "profile");
     if (!profile)
          return;
 
-    enable = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (button));
+    enable = hildon_check_button_get_active (HILDON_CHECK_BUTTON (button));
     profile_set_value_as_bool (profile, PROFILEKEY_VIBRATING_ALERT_ENABLED, enable);
 }
 
@@ -151,7 +151,7 @@ profiles_status_menu_item_on_button_clicked (GtkWidget *widget G_GNUC_UNUSED, Pr
     const char *label;
     const char *icon;
     const char *vibrate;
-    gboolean vibrating;
+    int vibrating;
 
     profiles = profile_get_profiles ();
     if (!profiles)
@@ -170,7 +170,7 @@ profiles_status_menu_item_on_button_clicked (GtkWidget *widget G_GNUC_UNUSED, Pr
         goto clean;
 
     main_hbox = gtk_hbox_new (FALSE, 0);
-    if (main_hbox)
+    if (!main_hbox)
         goto clean;
 
     gtk_box_pack_start (GTK_BOX (GTK_DIALOG (dialog)->vbox), main_hbox, TRUE, TRUE, 0);
@@ -185,7 +185,7 @@ profiles_status_menu_item_on_button_clicked (GtkWidget *widget G_GNUC_UNUSED, Pr
     if (!vibration_vbox)
         goto clean;
 
-    gtk_box_pack_start (GTK_BOX (main_hbox), vibration_vbox, FALSE, FALSE, HILDON_MARGIN_HALF);
+    gtk_box_pack_start (GTK_BOX (main_hbox), vibration_vbox, TRUE, TRUE, HILDON_MARGIN_HALF);
 
     for (ptr = profiles; *ptr; ++ptr)
     {
@@ -205,11 +205,11 @@ profiles_status_menu_item_on_button_clicked (GtkWidget *widget G_GNUC_UNUSED, Pr
         else
         {
             label = *ptr;
-            vibrate = dgettext ("osso-profiles", "profi_fi_select_vibrate");
+            vibrate = dgettext ("osso-profiles", "profi_fi_select_general_vibrate");
             icon = "general_profile";
         }
 
-        button = hildon_gtk_radio_button_new_from_widget (HILDON_SIZE_FINGER_HEIGHT, GTK_RADIO_BUTTON(radio_group));
+        button = hildon_gtk_radio_button_new_from_widget (HILDON_SIZE_FINGER_HEIGHT, GTK_RADIO_BUTTON (radio_group));
 
         if (!button)
             goto clean;
@@ -221,13 +221,15 @@ profiles_status_menu_item_on_button_clicked (GtkWidget *widget G_GNUC_UNUSED, Pr
         gtk_button_set_label (GTK_BUTTON (button), label);
         gtk_button_set_image (GTK_BUTTON (button), gtk_image_new_from_icon_name (icon, GTK_ICON_SIZE_DIALOG));
         gtk_button_set_alignment (GTK_BUTTON (button), 0, 0.5);
+        gtk_toggle_button_set_mode (GTK_TOGGLE_BUTTON (button), FALSE);
 
         if (strcmp (priv->current_profile_name, *ptr) == 0)
-            gtk_toggle_button_set_mode (GTK_TOGGLE_BUTTON (button), TRUE);
+            gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (button), TRUE);
         else
-            gtk_toggle_button_set_mode (GTK_TOGGLE_BUTTON (button), FALSE);
+            gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (button), FALSE);
 
-        gtk_box_pack_start (GTK_BOX (profiles_vbox), button, FALSE, FALSE, HILDON_MARGIN_HALF);
+
+        gtk_box_pack_start (GTK_BOX (profiles_vbox), button, TRUE, TRUE, HILDON_MARGIN_HALF);
 
         vibrate_button = hildon_check_button_new (HILDON_SIZE_FINGER_HEIGHT);
 
@@ -238,9 +240,9 @@ profiles_status_menu_item_on_button_clicked (GtkWidget *widget G_GNUC_UNUSED, Pr
         gtk_button_set_label (GTK_BUTTON (vibrate_button), vibrate);
 
         vibrating = profile_get_value_as_bool (*ptr, PROFILEKEY_VIBRATING_ALERT_ENABLED);
-        gtk_toggle_button_set_mode (GTK_TOGGLE_BUTTON (vibrate_button), vibrating);
+        hildon_check_button_set_active (HILDON_CHECK_BUTTON (vibrate_button), vibrating);
 
-        gtk_box_pack_start (GTK_BOX (vibration_vbox), vibrate_button, FALSE, FALSE, HILDON_MARGIN_HALF);
+        gtk_box_pack_start (GTK_BOX (vibration_vbox), vibrate_button, TRUE, TRUE, HILDON_MARGIN_HALF);
 
     }
 
@@ -305,7 +307,7 @@ profiles_status_menu_item_init (ProfilesStatusMenuItem *plugin)
     hildon_button_set_style (HILDON_BUTTON (priv->button), HILDON_BUTTON_STYLE_PICKER);
     hildon_button_set_title (HILDON_BUTTON (priv->button), dgettext ("osso-profiles", "profi_ti_menu_plugin"));
     gtk_button_set_alignment (GTK_BUTTON (priv->button), 0, 0);
-    g_signal_connect_after (priv->button, "clicked", G_CALLBACK (profiles_status_menu_item_on_button_clicked), plugin);
+    g_signal_connect_after (G_OBJECT (priv->button), "clicked", G_CALLBACK (profiles_status_menu_item_on_button_clicked), plugin);
 
     profiles_status_menu_item_update_profile (plugin);
 
