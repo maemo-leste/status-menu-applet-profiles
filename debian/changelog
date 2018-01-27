@@ -1,5 +1,11 @@
 status-menu-applet-profiles (0.13-1+0cssu0) unstable; urgency=low
 
+  * enable git builds
+
+ -- Merlijn Wajer <merlijn@wizzup.org>  Sat, 27 Jan 2017 23:50:00 +0100
+
+status-menu-applet-profiles (0.13-1+0cssu0) unstable; urgency=low
+
   * Cssu Release
 
  -- Christian Ratzenhofer <christian_ratzenhofer@yahoo.de>  Sun, 23 Dec 2012 17:52:51 +0100
