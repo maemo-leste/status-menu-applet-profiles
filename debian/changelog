@@ -1,3 +1,9 @@
+status-menu-applet-profiles (0.14) unstable; urgency=low
+
+  * Port to dh10 and autotools
+
+ -- Merlijn Wajer <merlijn@wizzup.org>  Sat, 25 Jan 2020 14:29:33 +0100
+
 status-menu-applet-profiles (0.13.1) unstable; urgency=low
 
   * enable git builds
