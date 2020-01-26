@@ -53,7 +53,7 @@ struct _ProfilesStatusMenuItemPrivate
 
 GType profiles_status_menu_item_get_type (void);
 
-HD_DEFINE_PLUGIN_MODULE (ProfilesStatusMenuItem, profiles_status_menu_item, HD_TYPE_STATUS_MENU_ITEM);
+HD_DEFINE_PLUGIN_MODULE_EXTENDED (ProfilesStatusMenuItem, profiles_status_menu_item, HD_TYPE_STATUS_MENU_ITEM, G_ADD_PRIVATE(ProfilesStatusMenuItem), , );
 
 static void
 profiles_status_menu_item_update_icons (ProfilesStatusMenuItem *plugin, gboolean is_silent)
@@ -269,7 +269,7 @@ clean:
 static void
 profiles_status_menu_item_init (ProfilesStatusMenuItem *plugin)
 {
-    plugin->priv = G_TYPE_INSTANCE_GET_PRIVATE (plugin, profiles_status_menu_item_get_type (), ProfilesStatusMenuItemPrivate);
+    plugin->priv = profiles_status_menu_item_get_instance_private(plugin);
 
     ProfilesStatusMenuItemPrivate *priv = plugin->priv;
     DBusError error;
@@ -342,5 +342,4 @@ profiles_status_menu_item_class_init (ProfilesStatusMenuItemClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
     object_class->finalize = (GObjectFinalizeFunc) profiles_status_menu_item_finalize;
-    g_type_class_add_private (klass, sizeof (ProfilesStatusMenuItemPrivate));
 }
