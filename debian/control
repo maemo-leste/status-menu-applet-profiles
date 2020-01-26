@@ -2,7 +2,7 @@ Source: status-menu-applet-profiles
 Section: libs
 Priority: optional
 Maintainer: Merlijn Wajer <merlijn@wizzup.org>
-Build-Depends: debhelper (>= 10), pkg-config, libhildon1-dev, libhildondesktop1-dev, libprofile-dev, profile-data-dev, libdbus-glib-1-dev, osso-af-settings
+Build-Depends: debhelper (>= 10), pkg-config, libhildon1-dev, libhildondesktop1-dev (>= 2.2.1), libprofile-dev, profile-data-dev, libdbus-glib-1-dev, osso-af-settings
 Standards-Version: 3.9.3
 
 Package: status-menu-applet-profiles
