@@ -3,6 +3,7 @@ AC_INIT([Status menu profiles applet],
         [merlijn@wizzup.org], [status-menu-applet-profiles])
 
 AM_INIT_AUTOMAKE
+LT_INIT([shared disable-static])
 AC_CONFIG_FILES([Makefile])
 
 AC_PROG_CC
