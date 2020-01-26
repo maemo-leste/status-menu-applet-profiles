@@ -4,7 +4,8 @@ profiles_status_menu_item_la_SOURCES = profiles_status_menu_item.c
 
 profiles_status_menu_item_la_CFLAGS = \
 	$(LIBHILDON_CFLAGS) $(LIBHILDONDESKTOP_CFLAGS) \
-	$(PROFILE_CFLAGS) $(PROFILEDATA_CFLAGS)
+	$(PROFILE_CFLAGS) $(PROFILEDATA_CFLAGS) \
+	-Wall -Werror -g
 
 profiles_status_menu_item_la_LIBADD = \
 	$(LIBHILDON_LIBS) $(LIBHILDONDESKTOP_LIBS) \
