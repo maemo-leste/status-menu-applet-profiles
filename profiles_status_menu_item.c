@@ -53,7 +53,7 @@ struct _ProfilesStatusMenuItemPrivate
 
 GType profiles_status_menu_item_get_type (void);
 
-HD_DEFINE_PLUGIN_MODULE_EXTENDED (ProfilesStatusMenuItem, profiles_status_menu_item, HD_TYPE_STATUS_MENU_ITEM, G_ADD_PRIVATE(ProfilesStatusMenuItem), , );
+HD_DEFINE_PLUGIN_MODULE_EXTENDED (ProfilesStatusMenuItem, profiles_status_menu_item, HD_TYPE_STATUS_MENU_ITEM, G_ADD_PRIVATE_DYNAMIC(ProfilesStatusMenuItem), , );
 
 static void
 profiles_status_menu_item_update_icons (ProfilesStatusMenuItem *plugin, gboolean is_silent)
