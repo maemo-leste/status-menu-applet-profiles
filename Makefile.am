@@ -14,3 +14,7 @@ profiles_status_menu_item_la_LDFLAGS = -Wl,--as-needed -module -avoid-version
 
 hildonstatusmenudesktopentry_DATA = status-area-applet-profiles.desktop
 EXTRA_DIST = $(hildonstatusmenudesktopentry_DATA)
+
+install-data-hook:
+	@(cd $(DESTDIR)$(hildondesktoplibdir) && $(RM) \
+		$(hildondesktoplib_LTLIBRARIES))
