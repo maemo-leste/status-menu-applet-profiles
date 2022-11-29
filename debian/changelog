@@ -1,3 +1,9 @@
+status-menu-applet-profiles (0.14.2) unstable; urgency=low
+
+  * Use the new HD_DEFINE_PLUGIN_MODULE_WITH_PRIVATE macro
+
+ -- Merlijn Wajer <merlijn@wizzup.org>  Tue, 29 Nov 2022 17:13:29 +0100
+
 status-menu-applet-profiles (0.14.1) unstable; urgency=low
 
   * dh build system fixes
